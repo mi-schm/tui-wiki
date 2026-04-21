@@ -1,0 +1,8 @@
+# Git initialisieren
+git init
+
+# Alle relevanten Dateien hinzufügen
+git add .
+
+# Der "Release 1.0" Commit
+git commit -m "v1.0.0: Initial Release - Lean Wiki with Tree View, FTS5 Search and Emacs Integration"
