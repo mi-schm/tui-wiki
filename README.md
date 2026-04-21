@@ -23,9 +23,11 @@ TUI-Wiki is a lightweight alternative to bloated note-taking apps. It turns your
    cd tui-wiki
    
 2. **Initialize dependencies:**
+   ```bash
 	go mod tidy
 	
-3. **Build and Run:**
+4. **Build and Run:**
+   ```bash
 	go build -o tui-wiki main.go
 	./tui-wiki
 
