@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -20,16 +21,17 @@ import (
 
 // --- Styles ---
 var (
-	docStyle        = lipgloss.NewStyle().Margin(1, 2)
-	helpStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Margin(1, 0)
-	dateStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Italic(true).MarginBottom(1)
-	warnStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
-	confirmBoxStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("196"))
+	docStyle             = lipgloss.NewStyle().Margin(1, 2)
+	helpStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Margin(1, 0)
+	successStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true).Margin(1, 0)
+	dateStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Italic(true).MarginBottom(1)
+	warnStyle            = lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
+	confirmBoxStyle      = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 2).BorderForeground(lipgloss.Color("196"))
 	
 	activeContentStyle   = lipgloss.NewStyle().Border(lipgloss.ThickBorder(), false, false, false, true).BorderForeground(lipgloss.Color("205")).PaddingLeft(1)
 	inactiveContentStyle = lipgloss.NewStyle().PaddingLeft(2)
 	
-	suggestionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Italic(true)
+	suggestionStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Italic(true)
 )
 
 type editFinishedMsg struct{ content string }
@@ -72,9 +74,12 @@ type model struct {
 	createRoot      bool
 	searching       bool
 	deleting        bool
+	importing       bool // NEU: Status für den Import-Modus
 	focusOnContent  bool 
 	width, height   int
 	sidebarWidth    int 
+	statusMsg       string
+	statusTimer     time.Time
 }
 
 func (m *model) resizePanes() {
@@ -193,6 +198,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		s := msg.String()
 
+		if m.importing {
+			if s == "enter" && m.input.Value() != "" {
+				path := m.input.Value()
+				m.startImport(path)
+				m.importing = false
+				m.refreshList()
+				m.statusMsg = "Imported from " + path
+				m.statusTimer = time.Now().Add(5 * time.Second)
+				m.input.Blur()
+				return m, nil
+			}
+			if s == "esc" {
+				m.importing = false
+				m.input.Blur()
+				return m, nil
+			}
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
+
 		if m.creatingNew {
 			if s == "enter" && m.input.Value() != "" {
 				newT, pID := m.input.Value(), 0
@@ -297,6 +322,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.searching = true
 			m.searchInput.Focus(); m.searchInput.SetValue(""); return m, textinput.Blink
 		case "d": m.deleting = true; return m, nil
+		case "x":
+			m.statusMsg = m.startExport()
+			m.statusTimer = time.Now().Add(5 * time.Second)
+			return m, nil
+		case "i":
+			m.importing = true    // NEU: Setzt das Programm in den Import-Modus
+			m.input.Focus()       // Setzt den Cursor ins Eingabefeld
+			m.input.SetValue("")  // Leert das Eingabefeld
+			return m, textinput.Blink
 		case "e":
 			if a, ok := m.list.SelectedItem().(item); ok {
 				f, _ := os.CreateTemp("", "wiki-*.md")
@@ -313,12 +347,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if !m.focusOnContent && !m.creatingNew && !m.searching && !m.deleting {
+	if !m.focusOnContent && !m.creatingNew && !m.searching && !m.deleting && !m.importing {
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
-	if !m.creatingNew && !m.searching && !m.deleting {
+	if !m.creatingNew && !m.searching && !m.deleting && !m.importing {
 		if i, ok := m.list.SelectedItem().(item); ok { m.renderPage(i) }
 	}
 
@@ -326,6 +360,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	if m.importing {
+		view := "IMPORT DIRECTORY PATH (z.B. ./export_2026...):\n" + m.input.View()
+		return docStyle.Render(view)
+	}
 	if m.creatingNew {
 		view := "NEW PAGE TITLE:\n" + m.input.View()
 		if len(m.suggestions) > 0 {
@@ -343,7 +381,7 @@ func (m model) View() string {
 	if m.focusOnContent { contentView = activeContentStyle.Render(contentView) } else { contentView = inactiveContentStyle.Render(contentView) }
 	
 	rightPane := lipgloss.JoinVertical(lipgloss.Left, dateStyle.Render(m.lastUpdate), contentView)
-	
+
 	if m.deleting {
 		a, _ := m.list.SelectedItem().(item)
 		box := confirmBoxStyle.Render(warnStyle.Render("DELETE PAGE?\n\n") + fmt.Sprintf("Delete '%s' permanently?\n(Sub-pages will be moved up)\n[y] Yes  [n] No", a.title))
@@ -351,8 +389,94 @@ func (m model) View() string {
 	}
 	
 	mainView := lipgloss.JoinHorizontal(lipgloss.Top, sidebarStyle.Render(m.list.View()), rightPane)
-	help := fmt.Sprintf("[L: Content | Space: Toggle | , / . : Resize] | n: child | e: edit | s: search | q: quit")
-	return docStyle.Render(lipgloss.JoinVertical(lipgloss.Left, mainView, helpStyle.Render(help)))
+	
+	var footer string
+	if m.statusMsg != "" && time.Now().Before(m.statusTimer) {
+		footer = successStyle.Render("✔ " + m.statusMsg)
+	} else {
+		if m.statusMsg != "" {
+			m.statusMsg = "" // Reset
+		}
+		help := fmt.Sprintf("[L: Content | Space: Toggle | , / . : Resize] | n: child | e: edit | s: search | x: export | i: import | q: quit")
+		footer = helpStyle.Render(help)
+	}
+
+	return docStyle.Render(lipgloss.JoinVertical(lipgloss.Left, mainView, footer))
+}
+
+// --- Export & Import ---
+
+func (m *model) exportRecursive(parentID int, currentPath string) error {
+	query := "SELECT id, title, content FROM pages WHERE parent_id = ?"
+	rows, err := m.db.Query(query, parentID)
+	if err != nil { return err }
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		var title, content string
+		rows.Scan(&id, &title, &content)
+
+		re := regexp.MustCompile(`[^a-zA-Z0-9_\-]`)
+		cleanTitle := re.ReplaceAllString(title, "_")
+		pagePath := filepath.Join(currentPath, cleanTitle)
+
+		os.MkdirAll(pagePath, 0755)
+		os.WriteFile(filepath.Join(pagePath, "index.md"), []byte(content), 0644)
+
+		m.exportRecursive(id, pagePath)
+	}
+	return nil
+}
+
+func (m *model) startExport() string {
+	dirName := "export_" + time.Now().Format("20060102_1504")
+	err := m.exportRecursive(0, dirName)
+	if err != nil {
+		return "Export failed: " + err.Error()
+	}
+	return "Exported to ./" + dirName
+}
+
+func (m *model) startImport(dirPath string) {
+	absPath, err := filepath.Abs(dirPath)
+	if err != nil { return }
+
+	// idMap merkt sich: "Ordnerpfad" -> "Datenbank-ID"
+	idMap := make(map[string]int)
+	
+	// Das Startverzeichnis ist die Root-Ebene (0)
+	idMap[absPath] = 0
+
+	filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil { return err }
+		
+		// WICHTIG: Wir triggern auf den ORDNER, nicht auf die index.md!
+		// So garantieren wir, dass Eltern vor ihren Kindern in die DB geschrieben werden.
+		if info.IsDir() {
+			// Den übergeordneten Export-Ordner selbst überspringen
+			if path == absPath {
+				return nil
+			}
+
+			title := filepath.Base(path)
+			parentDir := filepath.Dir(path)
+			parentID := idMap[parentDir] // ID des Eltern-Ordners holen
+
+			// Wir lesen den Inhalt der index.md in diesem Ordner
+			content, _ := os.ReadFile(filepath.Join(path, "index.md"))
+
+			// Jetzt MIT korrekter parentID einfügen
+			res, err := m.db.Exec("INSERT INTO pages (title, content, parent_id) VALUES (?, ?, ?)", title, string(content), parentID)
+			
+			if err == nil {
+				// Die neu erstellte ID aus der DB merken, falls dieser Ordner Unterordner hat
+				newID, _ := res.LastInsertId()
+				idMap[path] = int(newID)
+			}
+		}
+		return nil
+	})
 }
 
 func main() {
