@@ -19,7 +19,7 @@ TUI-Wiki is a lightweight alternative to bloated note-taking apps. It turns your
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/tui-wiki.git](https://github.com/yourusername/tui-wiki.git)
+   git clone [https://github.com/mi-schm/tui-wiki.git](https://github.com/yourusername/tui-wiki.git)
    cd tui-wiki
    
 2. **Initialize dependencies:**
