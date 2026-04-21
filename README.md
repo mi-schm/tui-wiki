@@ -1,48 +1,26 @@
-# 🧠 TUI-Wiki
+# tui-wiki
 
-A lightning-fast, minimalist, and offline-first personal wiki for the terminal. Built with **Go** and **Bubble Tea**, powered by **SQLite**.
+A minimalist, terminal-based personal wiki. Built with Go, Bubble Tea, and SQLite.
 
-TUI-Wiki is a lightweight alternative to bloated note-taking apps. It turns your terminal into a powerful second brain, keeping your knowledge organized in a clean, hierarchical tree structure.
+## Features
+- Tree-based navigation (collapsible nodes)
+- Full-text search (SQLite FTS5)
+- Auto-backlink discovery
+- Global `$EDITOR` integration
+- Single binary, local SQLite storage
+
+## Requirements
+- Go 1.21+
+- A terminal with Unicode support
+- An editor set in your `$EDITOR` environment variable
+
+## Installation
+```bash
+go mod tidy
+go build -o tui-wiki .
 
 <img width="1483" height="760" alt="image" src="https://github.com/user-attachments/assets/6e60423e-88dc-42bf-8e62-05d0a890c075" />
 
-
-## ✨ Key Features
-
-* **Keyboard-Centric:** Navigate, search, and edit without ever touching your mouse.
-* **Privacy First:** Everything stays on your machine in a local SQLite database. No cloud, no tracking.
-* **Interlinked:** Automatic backlink detection and `[[Wiki-Style]]` linking.
-* **Editor Agnostic:** Works with Vim, Emacs, Nano, or Notepad via the `$EDITOR` environment variable.
-* **Collapsible Tree View:** Manage deep hierarchies with toggleable nodes.
-* **Real-time Suggestions:** Prevents duplicate pages by suggesting similar titles during creation.
-* **Full-Text Search:** Blazing fast search across all your notes using SQLite FTS5.
-* **Dynamic Layout:** Adjust sidebar width on the fly using simple keybindings.
-
-## 🚀 Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/mi-schm/tui-wiki.git
-   cd tui-wiki
-   
-2. **Initialize dependencies:**
-   ```bash
-	go mod tidy
-	
-4. **Build and Run:**
-   ```bash
-	go build -o tui-wiki main.go
-	./tui-wiki
-
-## 🛠 Configuration
-	TUI-Wiki respects your system settings. To use a specific editor, set your EDITOR environment variable:
-
-	PowerShell: $env:EDITOR = 'C:\Path\To\your-editor.exe'
-
-	Bash/Zsh: export EDITOR='emacs'
-	
-## 💡 Development Vibe
-	This project was built using an AI-collaborative development approach. It emphasizes clean, iterative code and rapid prototyping. It's a stable "vibe-coded" tool designed for daily productivity. Contributions and pull requests are welcome!
-	
+build with ai
 ## License
 	This project is licensed under the MIT License - see the LICENSE file for details.
