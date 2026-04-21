@@ -11,8 +11,6 @@ A minimalist, terminal-based personal wiki. Built with Go, Bubble Tea, and SQLit
 - Export to .md preserving the full tree structure
 - Import local folders to automatically reconstruct the wiki hierarchy
 
-Import local folders to automatically reconstruct the wiki hierarchy
-
 ## Requirements
 - Go 1.21+
 - A terminal with Unicode support
