@@ -22,7 +22,7 @@ TUI-Wiki is a lightweight alternative to bloated note-taking apps. It turns your
    git clone [https://github.com/yourusername/tui-wiki.git](https://github.com/yourusername/tui-wiki.git)
    cd tui-wiki
    
-2. ** Initialize dependencies:**
+2. **Initialize dependencies:**
 	go mod tidy
 	
 3. **Build and Run:**
