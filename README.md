@@ -24,7 +24,7 @@ go mod tidy
 go build -o tui-wiki
 ```
 ## Screenshot
-<img width="1483" height="760" alt="image" src="https://github.com/user-attachments/assets/6e60423e-88dc-42bf-8e62-05d0a890c075" />
+<img width="1439" height="760" alt="image" src="https://github.com/user-attachments/assets/ebaf8a21-0ce3-422b-ae0c-3ad26702ef16" />
 
 ## License
 	This project is licensed under the MIT License - see the LICENSE file for details.
