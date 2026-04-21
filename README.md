@@ -4,6 +4,9 @@ A lightning-fast, minimalist, and offline-first personal wiki for the terminal. 
 
 TUI-Wiki is a lightweight alternative to bloated note-taking apps. It turns your terminal into a powerful second brain, keeping your knowledge organized in a clean, hierarchical tree structure.
 
+<img width="1483" height="760" alt="image" src="https://github.com/user-attachments/assets/6e60423e-88dc-42bf-8e62-05d0a890c075" />
+
+
 ## ✨ Key Features
 
 * **Keyboard-Centric:** Navigate, search, and edit without ever touching your mouse.
